@@ -20,6 +20,7 @@ import {
   webflowCollectionItemDeletedTrigger,
   webflowFormSubmissionTrigger,
 } from './webflow'
+import { twilioVoiceWebhookTrigger } from './twilio_voice'
 import { whatsappWebhookTrigger } from './whatsapp'
 
 // Central registry of all available triggers
@@ -34,6 +35,7 @@ export const TRIGGER_REGISTRY: TriggerRegistry = {
   outlook_poller: outlookPollingTrigger,
   stripe_webhook: stripeWebhookTrigger,
   telegram_webhook: telegramWebhookTrigger,
+  twilio_voice_webhook: twilioVoiceWebhookTrigger,
   whatsapp_webhook: whatsappWebhookTrigger,
   google_forms_webhook: googleFormsWebhookTrigger,
   webflow_collection_item_created: webflowCollectionItemCreatedTrigger,
