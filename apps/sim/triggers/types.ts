@@ -4,7 +4,7 @@ export type TriggerFieldType =
   | 'select'
   | 'number'
   | 'multiselect'
-  | 'credential'
+  | 'textarea'
 
 export interface TriggerConfigField {
   type: TriggerFieldType
