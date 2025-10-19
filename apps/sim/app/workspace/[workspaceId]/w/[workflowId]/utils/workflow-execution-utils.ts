@@ -1,8 +1,3 @@
-/**
- * Standalone workflow execution utilities
- * This allows workflow execution with proper logging from both React hooks and tools
- */
-
 import { v4 as uuidv4 } from 'uuid'
 import { createLogger } from '@/lib/logs/console/logger'
 import { buildTraceSpans } from '@/lib/logs/execution/trace-spans/trace-spans'
@@ -21,7 +16,9 @@ import { useWorkflowStore } from '@/stores/workflows/workflow/store'
 
 const logger = createLogger('WorkflowExecutionUtils')
 
-// Interface for executor options (copied from useWorkflowExecution)
+/**
+ * Interface for executor options
+ */
 interface ExecutorOptions {
   workflow: SerializedWorkflow
   currentBlockStates?: Record<string, BlockOutput>
@@ -37,24 +34,23 @@ interface ExecutorOptions {
   }
 }
 
+/**
+ * Workflow execution options
+ */
 export interface WorkflowExecutionOptions {
   workflowInput?: any
   executionId?: string
   onStream?: (se: StreamingExecution) => Promise<void>
 }
 
-export interface WorkflowExecutionContext {
-  activeWorkflowId: string
-  currentWorkflow: any
-  getAllVariables: () => any
-  getVariablesByWorkflowId: (workflowId: string) => any[]
-  setExecutor: (executor: Executor) => void
-}
+/**
+ * Standalone functions for workflow execution (used in tools, API routes, etc.)
+ */
 
 /**
  * Get the current workflow execution context from stores
  */
-export function getWorkflowExecutionContext(): WorkflowExecutionContext {
+export function getWorkflowExecutionContext() {
   const { activeWorkflowId } = useWorkflowRegistry.getState()
   if (!activeWorkflowId) {
     throw new Error('No active workflow found')
@@ -83,12 +79,11 @@ export function getWorkflowExecutionContext(): WorkflowExecutionContext {
 
 /**
  * Execute a workflow with proper state management and logging
- * This is the core execution logic extracted from useWorkflowExecution
  */
 export async function executeWorkflowWithLogging(
-  context: WorkflowExecutionContext,
   options: WorkflowExecutionOptions = {}
 ): Promise<ExecutionResult | StreamingExecution> {
+  const context = getWorkflowExecutionContext()
   const {
     activeWorkflowId,
     currentWorkflow,
@@ -129,9 +124,6 @@ export async function executeWorkflowWithLogging(
 
   // Merge subblock states from the appropriate store
   const mergedStates = mergeSubblockState(validBlocks)
-
-  // Don't filter out trigger blocks - let the executor handle them properly
-  // The standard executor has TriggerBlockHandler that knows how to handle triggers
   const filteredStates = mergedStates
 
   const currentBlockStates = Object.entries(filteredStates).reduce(
@@ -168,11 +160,9 @@ export async function executeWorkflowWithLogging(
     {} as Record<string, any>
   )
 
-  // Don't filter edges - let all connections remain intact
-  // The executor's routing system will handle execution paths properly
   const filteredEdges = workflowEdges
 
-  // Create serialized workflow with filtered blocks and edges
+  // Create serialized workflow
   const workflow = new Serializer().serializeWorkflow(
     filteredStates,
     filteredEdges,
@@ -183,7 +173,6 @@ export async function executeWorkflowWithLogging(
   // If this is a chat execution, get the selected outputs
   let selectedOutputs: string[] | undefined
   if (isExecutingFromChat) {
-    // Get selected outputs from chat store
     const chatStore = await import('@/stores/panel/chat/store').then((mod) => mod.useChatStore)
     selectedOutputs = chatStore.getState().getSelectedWorkflowOutput(activeWorkflowId)
   }
@@ -237,16 +226,13 @@ export async function persistExecutionLogs(
 
     // If this was a streaming response and we have the final content, update it
     if (streamContent && result.output && typeof streamContent === 'string') {
-      // Update the content with the final streaming content
       enrichedResult.output.content = streamContent
 
       // Also update any block logs to include the content where appropriate
       if (enrichedResult.logs) {
-        // Get the streaming block ID from metadata if available
         const streamingBlockId = (result.metadata as any)?.streamingBlockId || null
 
         for (const log of enrichedResult.logs) {
-          // Only update the specific LLM block (agent/router) that was streamed
           const isStreamingBlock = streamingBlockId && log.blockId === streamingBlockId
           if (
             isStreamingBlock &&
@@ -283,16 +269,18 @@ export async function persistExecutionLogs(
 
 /**
  * Execute workflow with full logging support
- * This combines execution + log persistence in a single function
+ * Combines execution + log persistence in a single function
  */
 export async function executeWorkflowWithFullLogging(
   options: WorkflowExecutionOptions = {}
 ): Promise<ExecutionResult | StreamingExecution> {
-  const context = getWorkflowExecutionContext()
   const executionId = options.executionId || uuidv4()
 
+  const context = getWorkflowExecutionContext()
+  const { activeWorkflowId } = context
+
   try {
-    const result = await executeWorkflowWithLogging(context, {
+    const result = await executeWorkflowWithLogging({
       ...options,
       executionId,
     })
@@ -300,7 +288,7 @@ export async function executeWorkflowWithFullLogging(
     // For ExecutionResult (not streaming), persist logs
     if (result && 'success' in result) {
       // Don't await log persistence to avoid blocking the UI
-      persistExecutionLogs(context.activeWorkflowId, executionId, result as ExecutionResult).catch(
+      persistExecutionLogs(activeWorkflowId, executionId, result as ExecutionResult).catch(
         (err) => {
           logger.error('Error persisting logs:', { error: err })
         }
@@ -317,7 +305,7 @@ export async function executeWorkflowWithFullLogging(
       metadata: { duration: 0, startTime: new Date().toISOString() },
     }
 
-    persistExecutionLogs(context.activeWorkflowId, executionId, errorResult).catch((err) => {
+    persistExecutionLogs(activeWorkflowId, executionId, errorResult).catch((err) => {
       logger.error('Error persisting logs:', { error: err })
     })
 
