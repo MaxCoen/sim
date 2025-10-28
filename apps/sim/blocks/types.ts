@@ -205,6 +205,12 @@ export interface SubBlockConfig {
   // Declarative dependency hints for cross-field clearing or invalidation
   // Example: dependsOn: ['credential'] means this field should be cleared when credential changes
   dependsOn?: string[]
+  /**
+   * Environment variable that must be truthy for this subblock to be visible.
+   * Enables declarative feature gating at the block definition level.
+   * @example requiresFeature: 'NEXT_PUBLIC_E2B_ENABLED'
+   */
+  requiresFeature?: string
 }
 
 export interface BlockConfig<T extends ToolResponse = ToolResponse> {
