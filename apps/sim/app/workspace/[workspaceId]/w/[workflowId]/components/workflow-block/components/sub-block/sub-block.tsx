@@ -52,7 +52,6 @@ interface SubBlockProps {
   disabled?: boolean
   fieldDiffStatus?: FieldDiffStatus
   allowExpandInPreview?: boolean
-  isWide?: boolean
 }
 
 export const SubBlock = memo(
@@ -65,7 +64,6 @@ export const SubBlock = memo(
     disabled = false,
     fieldDiffStatus,
     allowExpandInPreview,
-    isWide = false,
   }: SubBlockProps) {
     const [isValidJson, setIsValidJson] = useState(true)
 
@@ -151,7 +149,6 @@ export const SubBlock = memo(
                 disabled={isDisabled}
                 isConnecting={isConnecting}
                 config={config}
-                isWide={isWide}
               />
             </div>
           )
@@ -308,7 +305,6 @@ export const SubBlock = memo(
               isPreview={isPreview}
               previewValue={previewValue}
               disabled={isDisabled}
-              isWide={isWide}
             />
           )
         case 'webhook-config': {
@@ -621,8 +617,7 @@ export const SubBlock = memo(
       prevProps.subBlockValues === nextProps.subBlockValues &&
       prevProps.disabled === nextProps.disabled &&
       prevProps.fieldDiffStatus === nextProps.fieldDiffStatus &&
-      prevProps.allowExpandInPreview === nextProps.allowExpandInPreview &&
-      prevProps.isWide === nextProps.isWide
+      prevProps.allowExpandInPreview === nextProps.allowExpandInPreview
     )
   }
 )
