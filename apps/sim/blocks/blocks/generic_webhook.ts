@@ -24,7 +24,6 @@ export const GenericWebhookBlock: BlockConfig = {
       id: 'triggerConfig',
       title: 'Webhook Configuration',
       type: 'trigger-config',
-      layout: 'full',
       triggerProvider: 'generic',
       availableTriggers: ['generic_webhook'],
     },
@@ -33,7 +32,6 @@ export const GenericWebhookBlock: BlockConfig = {
       id: 'inputFormat',
       title: 'Input Format',
       type: 'input-format',
-      layout: 'full',
       description:
         'Define the expected JSON input schema for this webhook (optional). Use type "files" for file uploads.',
     },

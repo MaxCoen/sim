@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Tooltip } from '@/components/emcn'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,7 +13,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useSession, useSubscription } from '@/lib/auth-client'
 import { createLogger } from '@/lib/logs/console/logger'
 import { getBaseUrl } from '@/lib/urls/utils'
@@ -275,23 +275,21 @@ export function CancelSubscription({ subscription, subscriptionData }: CancelSub
                   : false)
               ) {
                 return (
-                  <TooltipProvider delayDuration={0}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className='w-full'>
-                          <AlertDialogAction
-                            disabled
-                            className='h-9 w-full cursor-not-allowed rounded-[8px] bg-muted text-muted-foreground opacity-50'
-                          >
-                            Continue
-                          </AlertDialogAction>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side='top'>
-                        <p>Subscription will be cancelled at end of billing period</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <div className='w-full'>
+                        <AlertDialogAction
+                          disabled
+                          className='h-9 w-full cursor-not-allowed rounded-[8px] bg-muted text-muted-foreground opacity-50'
+                        >
+                          Continue
+                        </AlertDialogAction>
+                      </div>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content side='top'>
+                      <p>Subscription will be cancelled at end of billing period</p>
+                    </Tooltip.Content>
+                  </Tooltip.Root>
                 )
               }
               return (

@@ -72,8 +72,6 @@ export type SubBlockType =
   | 'input-mapping' // Map parent variables to child workflow input schema
   | 'variables-input' // Variable assignments for updating workflow variables
 
-export type SubBlockLayout = 'full' | 'half'
-
 export type ExtractToolOutput<T> = T extends ToolResponse ? T['output'] : never
 
 export type ToolOutputToValueType<T> = T extends Record<string, any>
@@ -119,7 +117,6 @@ export interface SubBlockConfig {
   id: string
   title?: string
   type: SubBlockType
-  layout?: SubBlockLayout
   mode?: 'basic' | 'advanced' | 'both' // Default is 'both' if not specified
   canonicalParamId?: string
   required?: boolean
