@@ -13,6 +13,7 @@ import { outlookPollingTrigger } from './outlook'
 import { slackWebhookTrigger } from './slack'
 import { stripeWebhookTrigger } from './stripe/webhook'
 import { telegramWebhookTrigger } from './telegram'
+import { twilioVoiceWebhookTrigger } from './twilio_voice'
 import type { TriggerConfig, TriggerRegistry } from './types'
 import {
   webflowCollectionItemChangedTrigger,
@@ -20,7 +21,6 @@ import {
   webflowCollectionItemDeletedTrigger,
   webflowFormSubmissionTrigger,
 } from './webflow'
-import { twilioVoiceWebhookTrigger } from './twilio_voice'
 import { whatsappWebhookTrigger } from './whatsapp'
 
 // Central registry of all available triggers

@@ -130,6 +130,82 @@ export const twilioVoiceWebhookTrigger: TriggerConfig = {
       type: 'string',
       description: 'Recording SID if available',
     },
+    called: {
+      type: 'string',
+      description: 'Phone number that was called (same as "to")',
+    },
+    caller: {
+      type: 'string',
+      description: 'Phone number of the caller (same as "from")',
+    },
+    toCity: {
+      type: 'string',
+      description: 'City of the called number',
+    },
+    toState: {
+      type: 'string',
+      description: 'State/province of the called number',
+    },
+    toZip: {
+      type: 'string',
+      description: 'Zip/postal code of the called number',
+    },
+    toCountry: {
+      type: 'string',
+      description: 'Country of the called number',
+    },
+    fromCity: {
+      type: 'string',
+      description: 'City of the caller',
+    },
+    fromState: {
+      type: 'string',
+      description: 'State/province of the caller',
+    },
+    fromZip: {
+      type: 'string',
+      description: 'Zip/postal code of the caller',
+    },
+    fromCountry: {
+      type: 'string',
+      description: 'Country of the caller',
+    },
+    calledCity: {
+      type: 'string',
+      description: 'City of the called number (same as toCity)',
+    },
+    calledState: {
+      type: 'string',
+      description: 'State of the called number (same as toState)',
+    },
+    calledZip: {
+      type: 'string',
+      description: 'Zip code of the called number (same as toZip)',
+    },
+    calledCountry: {
+      type: 'string',
+      description: 'Country of the called number (same as toCountry)',
+    },
+    callerCity: {
+      type: 'string',
+      description: 'City of the caller (same as fromCity)',
+    },
+    callerState: {
+      type: 'string',
+      description: 'State of the caller (same as fromState)',
+    },
+    callerZip: {
+      type: 'string',
+      description: 'Zip code of the caller (same as fromZip)',
+    },
+    callerCountry: {
+      type: 'string',
+      description: 'Country of the caller (same as fromCountry)',
+    },
+    callToken: {
+      type: 'string',
+      description: 'Twilio call token for authentication',
+    },
     raw: {
       type: 'string',
       description: 'Complete raw webhook payload from Twilio as JSON string',
