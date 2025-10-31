@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils'
 import { Input } from '../input/input'
 
 const comboboxVariants = cva(
-  'flex w-full rounded-[4px] border border-[#3D3D3D] bg-[#282828] dark:bg-[#353535] px-[8px] py-[7px] font-sans font-medium text-sm text-foreground placeholder:text-[#787878] dark:placeholder:text-[#787878] outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 hover:border-[#4A4A4A] hover:bg-[#353535] dark:hover:border-[#454545] dark:hover:bg-[#3D3D3D]',
+  'flex w-full rounded-[4px] border border-[#3D3D3D] bg-[#282828] dark:bg-[#353535] px-[8px] py-[7px] font-sans font-medium text-sm text-[#E6E6E6] placeholder:text-[#787878] dark:placeholder:text-[#787878] outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 hover:border-[#4A4A4A] hover:bg-[#353535] dark:hover:border-[#454545] dark:hover:bg-[#3D3D3D]',
   {
     variants: {
       variant: {
@@ -345,7 +345,7 @@ const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(
                     {SelectedIcon && (
                       <SelectedIcon className='mr-[8px] h-3 w-3 flex-shrink-0 opacity-60' />
                     )}
-                    <span className='truncate text-foreground'>{selectedOption?.label}</span>
+                    <span className='truncate text-[#E6E6E6]'>{selectedOption?.label}</span>
                   </>
                 )}
               </div>
@@ -390,11 +390,7 @@ const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(
         {open && (
           <div className='absolute top-full left-0 z-[100] mt-[4px] w-full'>
             <div className='fade-in-0 zoom-in-95 animate-in rounded-[4px] border border-[#3D3D3D] bg-[#282828] shadow-lg dark:bg-[#353535]'>
-              <div
-                ref={dropdownRef}
-                role='listbox'
-                className='max-h-48 overflow-y-auto p-[4px] [scrollbar-width:thin]'
-              >
+              <div ref={dropdownRef} role='listbox' className='max-h-48 overflow-y-auto p-[4px]'>
                 {filteredOptions.length === 0 ? (
                   <div className='py-[14px] text-center font-medium font-sans text-[#787878] text-sm'>
                     {editable && value ? 'No matching options found.' : 'No options available.'}
@@ -427,7 +423,7 @@ const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(
                         )}
                       >
                         {OptionIcon && <OptionIcon className='mr-[8px] h-3 w-3 opacity-60' />}
-                        <span className='flex-1 truncate text-foreground'>{option.label}</span>
+                        <span className='flex-1 truncate text-[#E6E6E6]'>{option.label}</span>
                         {isSelected && <Check className='ml-[8px] h-4 w-4 flex-shrink-0' />}
                       </div>
                     )

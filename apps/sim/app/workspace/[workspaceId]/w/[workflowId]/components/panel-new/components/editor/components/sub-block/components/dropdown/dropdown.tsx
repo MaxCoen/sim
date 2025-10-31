@@ -1,30 +1,50 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, ChevronDown } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { cn } from '@/lib/utils'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Combobox, type ComboboxOption } from '@/components/emcn/components'
 import { useSubBlockValue } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/panel-new/components/editor/components/sub-block/hooks/use-sub-block-value'
 import { ResponseBlockHandler } from '@/executor/handlers/response/response-handler'
 
+/**
+ * Option type for the dropdown - can be a string or an object with label, id, and optional icon
+ */
+type DropdownOption =
+  | string
+  | { label: string; id: string; icon?: React.ComponentType<{ className?: string }> }
+
+/**
+ * Props for the Dropdown component
+ */
 interface DropdownProps {
-  options:
-    | Array<
-        string | { label: string; id: string; icon?: React.ComponentType<{ className?: string }> }
-      >
-    | (() => Array<
-        string | { label: string; id: string; icon?: React.ComponentType<{ className?: string }> }
-      >)
+  /** Available options for selection - can be static array or function that returns options */
+  options: DropdownOption[] | (() => DropdownOption[])
+  /** Default value to use when no value is set */
   defaultValue?: string
+  /** ID of the parent block */
   blockId: string
+  /** ID of the sub-block this dropdown belongs to */
   subBlockId: string
+  /** Controlled value (overrides store value when provided) */
   value?: string
+  /** Whether the component is in preview mode */
   isPreview?: boolean
+  /** Value to display in preview mode */
   previewValue?: string | null
+  /** Whether the dropdown is disabled */
   disabled?: boolean
+  /** Placeholder text when no value is selected */
   placeholder?: string
+  /** Configuration for the sub-block */
   config?: import('@/blocks/types').SubBlockConfig
 }
 
+/**
+ * Dropdown component that provides a select-only interface for choosing from predefined options.
+ * Uses the emcn Combobox component in select-only mode.
+ *
+ * Special handling for response block dataMode conversion between 'structured' and 'json' modes.
+ *
+ * @param props - Component props
+ * @returns Rendered Dropdown component
+ */
 export function Dropdown({
   options,
   defaultValue,
@@ -37,13 +57,9 @@ export function Dropdown({
   placeholder = 'Select an option...',
   config,
 }: DropdownProps) {
+  // Store management
   const [storeValue, setStoreValue] = useSubBlockValue<string>(blockId, subBlockId)
   const [storeInitialized, setStoreInitialized] = useState(false)
-  const [open, setOpen] = useState(false)
-  const [highlightedIndex, setHighlightedIndex] = useState(-1)
-
-  const inputRef = useRef<HTMLInputElement>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
   const previousModeRef = useRef<string | null>(null)
 
   // For response dataMode conversion - get builderData and data sub-blocks
@@ -59,31 +75,36 @@ export function Dropdown({
     dataRef.current = data
   }, [builderData, data])
 
-  // Use preview value when in preview mode, otherwise use store value or prop value
+  // Determine the active value based on mode (preview vs. controlled vs. store)
   const value = isPreview ? previewValue : propValue !== undefined ? propValue : storeValue
 
-  // Evaluate options if it's a function
+  // Evaluate options if provided as a function
   const evaluatedOptions = useMemo(() => {
     return typeof options === 'function' ? options() : options
   }, [options])
 
-  const getOptionValue = (
-    option:
-      | string
-      | { label: string; id: string; icon?: React.ComponentType<{ className?: string }> }
-  ) => {
+  /**
+   * Extracts the value identifier from an option
+   * @param option - The option to extract value from
+   * @returns The option's value identifier
+   */
+  const getOptionValue = useCallback((option: DropdownOption): string => {
     return typeof option === 'string' ? option : option.id
-  }
+  }, [])
 
-  const getOptionLabel = (
-    option:
-      | string
-      | { label: string; id: string; icon?: React.ComponentType<{ className?: string }> }
-  ) => {
+  /**
+   * Extracts the display label from an option
+   * @param option - The option to extract label from
+   * @returns The option's display label
+   */
+  const getOptionLabel = useCallback((option: DropdownOption): string => {
     return typeof option === 'string' ? option : option.label
-  }
+  }, [])
 
-  // Get the default option value (first option or provided defaultValue)
+  /**
+   * Determines the default option value to use.
+   * Priority: explicit defaultValue > first option
+   */
   const defaultOptionValue = useMemo(() => {
     if (defaultValue !== undefined) {
       return defaultValue
@@ -96,13 +117,22 @@ export function Dropdown({
     return undefined
   }, [defaultValue, evaluatedOptions, getOptionValue])
 
+  // Convert options to Combobox format
+  const comboboxOptions = useMemo((): ComboboxOption[] => {
+    return evaluatedOptions.map((option) => {
+      if (typeof option === 'string') {
+        return { label: option, value: option }
+      }
+      return { label: option.label, value: option.id, icon: option.icon }
+    })
+  }, [evaluatedOptions])
+
   // Mark store as initialized on first render
   useEffect(() => {
     setStoreInitialized(true)
   }, [])
 
-  // Only set default value once the store is confirmed to be initialized
-  // and we know the actual value is null/undefined (not just loading)
+  // Set default value once store is initialized and value is undefined
   useEffect(() => {
     if (
       storeInitialized &&
@@ -113,52 +143,75 @@ export function Dropdown({
     }
   }, [storeInitialized, value, defaultOptionValue, setStoreValue])
 
-  // Helper function to normalize variable references in JSON strings
-  const normalizeVariableReferences = (jsonString: string): string => {
+  /**
+   * Normalizes variable references in JSON strings
+   * Replaces unquoted variable references with quoted ones
+   * @param jsonString - JSON string to normalize
+   * @returns Normalized JSON string
+   */
+  const normalizeVariableReferences = useCallback((jsonString: string): string => {
     // Replace unquoted variable references with quoted ones
     // Pattern: <variable.name> -> "<variable.name>"
     return jsonString.replace(/([^"]<[^>]+>)/g, '"$1"')
-  }
+  }, [])
 
-  // Helper function to convert JSON string to builder data format
-  const convertJsonToBuilderData = (jsonString: string): any[] => {
-    try {
-      // Always normalize variable references first
-      const normalizedJson = normalizeVariableReferences(jsonString)
-      const parsed = JSON.parse(normalizedJson)
+  /**
+   * Infers field type from a value
+   * @param value - Value to infer type from
+   * @returns Inferred type
+   */
+  const inferType = useCallback(
+    (value: any): 'string' | 'number' | 'boolean' | 'object' | 'array' => {
+      if (typeof value === 'boolean') return 'boolean'
+      if (typeof value === 'number') return 'number'
+      if (Array.isArray(value)) return 'array'
+      if (typeof value === 'object' && value !== null) return 'object'
+      return 'string'
+    },
+    []
+  )
 
-      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-        return Object.entries(parsed).map(([key, value]) => {
-          const fieldType = inferType(value)
-          const fieldValue =
-            fieldType === 'object' || fieldType === 'array' ? JSON.stringify(value, null, 2) : value
+  /**
+   * Converts JSON string to builder data format
+   * @param jsonString - JSON string to convert
+   * @returns Builder data array
+   */
+  const convertJsonToBuilderData = useCallback(
+    (jsonString: string): any[] => {
+      try {
+        // Always normalize variable references first
+        const normalizedJson = normalizeVariableReferences(jsonString)
+        const parsed = JSON.parse(normalizedJson)
 
-          return {
-            id: crypto.randomUUID(),
-            name: key,
-            type: fieldType,
-            value: fieldValue,
-            collapsed: false,
-          }
-        })
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+          return Object.entries(parsed).map(([key, value]) => {
+            const fieldType = inferType(value)
+            const fieldValue =
+              fieldType === 'object' || fieldType === 'array'
+                ? JSON.stringify(value, null, 2)
+                : value
+
+            return {
+              id: crypto.randomUUID(),
+              name: key,
+              type: fieldType,
+              value: fieldValue,
+              collapsed: false,
+            }
+          })
+        }
+
+        return []
+      } catch (error) {
+        return []
       }
+    },
+    [normalizeVariableReferences, inferType]
+  )
 
-      return []
-    } catch (error) {
-      return []
-    }
-  }
-
-  // Helper function to infer field type from value
-  const inferType = (value: any): 'string' | 'number' | 'boolean' | 'object' | 'array' => {
-    if (typeof value === 'boolean') return 'boolean'
-    if (typeof value === 'number') return 'number'
-    if (Array.isArray(value)) return 'array'
-    if (typeof value === 'object' && value !== null) return 'object'
-    return 'string'
-  }
-
-  // Handle data conversion when dataMode changes
+  /**
+   * Handles data conversion when dataMode changes between 'structured' and 'json'
+   */
   useEffect(() => {
     if (subBlockId !== 'dataMode' || isPreview || disabled) return
 
@@ -191,222 +244,41 @@ export function Dropdown({
 
     // Update the previous mode ref
     previousModeRef.current = currentMode
-  }, [storeValue, subBlockId, isPreview, disabled, setData, setBuilderData])
+  }, [
+    storeValue,
+    subBlockId,
+    isPreview,
+    disabled,
+    setData,
+    setBuilderData,
+    convertJsonToBuilderData,
+  ])
 
-  // Event handlers
-  const handleSelect = (selectedValue: string) => {
-    if (!isPreview && !disabled) {
-      setStoreValue(selectedValue)
-    }
-    setOpen(false)
-    setHighlightedIndex(-1)
-    inputRef.current?.blur()
-  }
-
-  const handleDropdownClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!disabled) {
-      setOpen(!open)
-      if (!open) {
-        inputRef.current?.focus()
+  /**
+   * Handles value change from Combobox
+   * @param newValue - The selected value
+   */
+  const handleChange = useCallback(
+    (newValue: string) => {
+      if (!isPreview && !disabled) {
+        setStoreValue(newValue)
       }
-    }
-  }
+    },
+    [isPreview, disabled, setStoreValue]
+  )
 
-  const handleFocus = () => {
-    setOpen(true)
-    setHighlightedIndex(-1)
-  }
+  const displayValue = useMemo(() => value?.toString() ?? '', [value])
 
-  const handleBlur = () => {
-    // Delay closing to allow dropdown selection
-    setTimeout(() => {
-      const activeElement = document.activeElement
-      if (!activeElement || !activeElement.closest('.absolute.top-full')) {
-        setOpen(false)
-        setHighlightedIndex(-1)
-      }
-    }, 150)
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Escape') {
-      setOpen(false)
-      setHighlightedIndex(-1)
-      return
-    }
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      if (!open) {
-        setOpen(true)
-        setHighlightedIndex(0)
-      } else {
-        setHighlightedIndex((prev) => (prev < evaluatedOptions.length - 1 ? prev + 1 : 0))
-      }
-    }
-
-    if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      if (open) {
-        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : evaluatedOptions.length - 1))
-      }
-    }
-
-    if (e.key === 'Enter' && open && highlightedIndex >= 0) {
-      e.preventDefault()
-      const selectedOption = evaluatedOptions[highlightedIndex]
-      if (selectedOption) {
-        handleSelect(getOptionValue(selectedOption))
-      }
-    }
-  }
-
-  // Effects
-  useEffect(() => {
-    setHighlightedIndex((prev) => {
-      if (prev >= 0 && prev < evaluatedOptions.length) {
-        return prev
-      }
-      return -1
-    })
-  }, [evaluatedOptions])
-
-  // Scroll highlighted option into view
-  useEffect(() => {
-    if (highlightedIndex >= 0 && dropdownRef.current) {
-      const highlightedElement = dropdownRef.current.querySelector(
-        `[data-option-index="${highlightedIndex}"]`
-      )
-      if (highlightedElement) {
-        highlightedElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-        })
-      }
-    }
-  }, [highlightedIndex])
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element
-      if (
-        inputRef.current &&
-        !inputRef.current.contains(target) &&
-        !target.closest('.absolute.top-full')
-      ) {
-        setOpen(false)
-        setHighlightedIndex(-1)
-      }
-    }
-
-    if (open) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside)
-      }
-    }
-  }, [open])
-
-  // Display value
-  const displayValue = value?.toString() ?? ''
-  const selectedOption = evaluatedOptions.find((opt) => getOptionValue(opt) === value)
-  const selectedLabel = selectedOption ? getOptionLabel(selectedOption) : displayValue
-  const SelectedIcon =
-    selectedOption && typeof selectedOption === 'object' && 'icon' in selectedOption
-      ? (selectedOption.icon as React.ComponentType<{ className?: string }>)
-      : null
-
-  // Render component
   return (
     <div className='relative w-full'>
-      <div className='relative'>
-        <Input
-          ref={inputRef}
-          className={cn(
-            'w-full cursor-pointer overflow-hidden pr-10 text-foreground',
-            SelectedIcon ? 'pl-8' : ''
-          )}
-          placeholder={placeholder}
-          value={selectedLabel || ''}
-          readOnly
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
-          disabled={disabled}
-          autoComplete='off'
-        />
-        {/* Icon overlay */}
-        {SelectedIcon && (
-          <div className='pointer-events-none absolute top-0 bottom-0 left-0 flex items-center bg-transparent pl-3 text-sm'>
-            <SelectedIcon className='h-3 w-3' />
-          </div>
-        )}
-        {/* Chevron button */}
-        <Button
-          variant='ghost'
-          size='sm'
-          className='-translate-y-1/2 absolute top-1/2 right-1 z-10 h-6 w-6 p-0 hover:bg-transparent'
-          disabled={disabled}
-          onMouseDown={handleDropdownClick}
-        >
-          <ChevronDown
-            className={cn('h-4 w-4 opacity-50 transition-transform', open && 'rotate-180')}
-          />
-        </Button>
-      </div>
-
-      {/* Dropdown */}
-      {open && (
-        <div className='absolute top-full left-0 z-[100] mt-1 w-full'>
-          <div className='allow-scroll fade-in-0 zoom-in-95 animate-in rounded-md border bg-popover text-popover-foreground shadow-lg'>
-            <div
-              ref={dropdownRef}
-              className='allow-scroll max-h-48 overflow-y-auto p-1'
-              style={{ scrollbarWidth: 'thin' }}
-            >
-              {evaluatedOptions.length === 0 ? (
-                <div className='py-6 text-center text-muted-foreground text-sm'>
-                  No options available.
-                </div>
-              ) : (
-                evaluatedOptions.map((option, index) => {
-                  const optionValue = getOptionValue(option)
-                  const optionLabel = getOptionLabel(option)
-                  const OptionIcon =
-                    typeof option === 'object' && 'icon' in option
-                      ? (option.icon as React.ComponentType<{ className?: string }>)
-                      : null
-                  const isSelected = value === optionValue
-                  const isHighlighted = index === highlightedIndex
-
-                  return (
-                    <div
-                      key={optionValue}
-                      data-option-index={index}
-                      onClick={() => handleSelect(optionValue)}
-                      onMouseDown={(e) => {
-                        e.preventDefault()
-                        handleSelect(optionValue)
-                      }}
-                      onMouseEnter={() => setHighlightedIndex(index)}
-                      className={cn(
-                        'relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground',
-                        isHighlighted && 'bg-accent text-accent-foreground'
-                      )}
-                    >
-                      {OptionIcon && <OptionIcon className='mr-2 h-3 w-3' />}
-                      <span className='flex-1 truncate'>{optionLabel}</span>
-                      {isSelected && <Check className='ml-2 h-4 w-4 flex-shrink-0' />}
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <Combobox
+        options={comboboxOptions}
+        value={displayValue}
+        onChange={handleChange}
+        placeholder={placeholder}
+        disabled={disabled}
+        editable={false}
+      />
     </div>
   )
 }

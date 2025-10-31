@@ -16,7 +16,6 @@ import { TriggerUtils } from '@/lib/workflows/triggers'
 import { useUserPermissionsContext } from '@/app/workspace/[workspaceId]/providers/workspace-permissions-provider'
 import { DiffControls } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/diff-controls'
 import { ErrorBoundary } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/error/index'
-import { FloatingControls } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/floating-controls/floating-controls'
 import { Panel } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/panel-new/panel-new'
 import { SubflowNodeComponent } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/subflows/subflow-node'
 import { TrainingControls } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/training-controls/training-controls'
@@ -37,9 +36,9 @@ import { useCollaborativeWorkflow } from '@/hooks/use-collaborative-workflow'
 import { useStreamCleanup } from '@/hooks/use-stream-cleanup'
 import { useWorkspacePermissions } from '@/hooks/use-workspace-permissions'
 import { useExecutionStore } from '@/stores/execution/store'
-import { useEnvironmentStore } from '@/stores/settings/environment/store'
 import { useCopilotStore } from '@/stores/panel-new/copilot/store'
 import { usePanelEditorStore } from '@/stores/panel-new/editor/store'
+import { useEnvironmentStore } from '@/stores/settings/environment/store'
 import { useGeneralStore } from '@/stores/settings/general/store'
 import { useWorkflowDiffStore } from '@/stores/workflow-diff/store'
 import { hasWorkflowsInitiallyLoaded, useWorkflowRegistry } from '@/stores/workflows/registry/store'
@@ -1886,9 +1885,6 @@ const WorkflowContent = React.memo(() => {
   return (
     <div className='flex h-screen w-full flex-col overflow-hidden'>
       <div className='relative h-full w-full flex-1 transition-all duration-200'>
-        {/* Floating Controls (Zoom, Undo, Redo) */}
-        <FloatingControls />
-
         {/* Training Controls - for recording workflow edits */}
         <TrainingControls />
 
